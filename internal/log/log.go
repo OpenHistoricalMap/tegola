@@ -62,10 +62,10 @@ func (h *Handler) Enabled(ctx context.Context, level slog.Level) bool {
 // it adds a "stack" attribute containing the current stack trace to the record.
 // The modified record is then passed to the underlying handler for output.
 func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
-	// For errors and more severe logs, include the current stack trace.
-	if r.Level >= slog.LevelError {
-		r.Add("stack", string(debug.Stack()))
-	}
+	// Stack traces disabled to reduce log verbosity
+	// if r.Level >= slog.LevelError {
+	// 	r.Add("stack", string(debug.Stack()))
+	// }
 	return h.handler.Handle(ctx, r)
 }
 
