@@ -13,7 +13,6 @@ import (
 	"github.com/go-spatial/geom"
 	"github.com/go-spatial/tegola/atlas"
 	"github.com/go-spatial/tegola/mapbox/tilejson"
-	"github.com/go-spatial/tegola/provider"
 	"github.com/go-spatial/tegola/provider/test"
 	"github.com/go-spatial/tegola/server"
 )

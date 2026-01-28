@@ -23,6 +23,7 @@ var (
 )
 
 type HandleMapCapabilities struct {
+	Atlas *atlas.Atlas
 	// required
 	mapName string
 	// the requests extension defaults to "json"
@@ -50,26 +51,36 @@ func (req HandleMapCapabilities) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		req.extension = "json"
 	}
 
+	cacheKey := req.mapName + "|" + URLRoot(r).String() + "|" + r.URL.Query().Encode()
+
 	// Check cache
 	capabilitiesMux.RLock()
-	if cached, ok := capabilitiesCache[req.mapName]; ok {
+	if cached, ok := capabilitiesCache[cacheKey]; ok {
 		capabilitiesMux.RUnlock()
 		w.Header().Add("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(cached)
 		return
 	}
 	// Get or create sync.Once for this map to avoid duplicate work
-	once, exists := capabilitiesOnce[req.mapName]
+	once, exists := capabilitiesOnce[cacheKey]
 	if !exists {
 		once = &sync.Once{}
-		capabilitiesOnce[req.mapName] = once
+		capabilitiesOnce[cacheKey] = once
 	}
 	capabilitiesMux.RUnlock()
 
 	// Build TileJSON only once per map (idempotent operation)
 	once.Do(func() {
 		// lookup our Map
-		m, err := atlas.GetMap(req.mapName)
+		var (
+			m   atlas.Map
+			err error
+		)
+		if req.Atlas != nil {
+			m, err = req.Atlas.Map(req.mapName)
+		} else {
+			m, err = atlas.GetMap(req.mapName)
+		}
 		if err != nil {
 			log.Errorf("map (%v) not configured. check your config file", req.mapName)
 			return
@@ -217,13 +228,13 @@ func (req HandleMapCapabilities) ServeHTTP(w http.ResponseWriter, r *http.Reques
 
 		// Store in cache
 		capabilitiesMux.Lock()
-		capabilitiesCache[req.mapName] = tileJSON
+		capabilitiesCache[cacheKey] = tileJSON
 		capabilitiesMux.Unlock()
 	})
 
 	// Read from cache after construction (all goroutines, including the one that built it)
 	capabilitiesMux.RLock()
-	cached := capabilitiesCache[req.mapName]
+	cached := capabilitiesCache[cacheKey]
 	capabilitiesMux.RUnlock()
 
 	// content type

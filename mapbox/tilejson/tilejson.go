@@ -140,5 +140,5 @@ type VectorLayer struct {
 	Tiles []string `json:"tiles"`
 	// REQUIRED in TileJSON 3.0.0. An object whose keys and values are the names
 	// and descriptions of attributes available in this layer.
-	Fields map[string]any{} `json:"fields,omitempty"`
+	Fields map[string]any `json:"fields,omitempty"`
 }
